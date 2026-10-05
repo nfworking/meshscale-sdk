@@ -1,0 +1,821 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MeshScale API",
+    "version": "1.0.0",
+    "description": "MeshScale Deploy API v1. Resources are scoped to the authenticated organization. API clients may pin the release using the X-MeshScale-API-Version header."
+  },
+  "servers": [
+    { "url": "http://localhost:3002", "description": "Local development" },
+    { "url": "https://api.meshscale.cloud", "description": "Production" }
+  ],
+  "security": [
+    { "bearerAuth": [] }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Get API health",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } } }
+          },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/regions": {
+      "get": {
+        "operationId": "listRegions",
+        "summary": "List all deployment regions",
+        "description": "Public region catalogue. Team/project availability is enforced separately by the authenticated organization and project APIs.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Regions",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegionsResponse" } } }
+          },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/user": {
+      "get": {
+        "operationId": "getUser",
+        "summary": "Get current user",
+        "responses": {
+          "200": { "description": "Current user", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/user/preferences": {
+      "get": {
+        "operationId": "getUserPreferences",
+        "summary": "Get current user preferences",
+        "responses": {
+          "200": { "description": "Preferences", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserPreferencesResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateUserPreferences",
+        "summary": "Update current user preferences",
+        "requestBody": { "$ref": "#/components/requestBodies/UserPreferencesPatch" },
+        "responses": {
+          "200": { "description": "Updated preferences", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserPreferencesResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/organizations": {
+      "get": {
+        "operationId": "listOrganizations",
+        "summary": "List organizations for the current user",
+        "responses": {
+          "200": { "description": "Organizations", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrganizationListResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "createOrganization",
+        "summary": "Create an organization",
+        "requestBody": { "$ref": "#/components/requestBodies/CreateOrganization" },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrganizationResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "setActiveOrganization",
+        "summary": "Set the active organization",
+        "requestBody": { "$ref": "#/components/requestBodies/SetActiveOrganization" },
+        "responses": {
+          "200": { "description": "Active organization", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrganizationResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/organizations/settings": {
+      "get": {
+        "operationId": "getTeamSettings",
+        "summary": "Get active team settings and enabled regions",
+        "responses": {
+          "200": { "description": "Team settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TeamSettingsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateTeamSettings",
+        "summary": "Update active team settings and enabled regions",
+        "description": "enabledRegionIds defines the regions that projects in the team are allowed to use. The server enforces this policy when creating or modifying project regions.",
+        "requestBody": { "$ref": "#/components/requestBodies/TeamSettingsPatch" },
+        "responses": {
+          "200": { "description": "Updated team settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TeamSettingsPatchResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "summary": "List projects in the active organization",
+        "responses": {
+          "200": { "description": "Projects", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "createProject",
+        "summary": "Create a project with enabled regions",
+        "description": "Every requested region must exist and must be enabled for the active team. This validation is performed server-side, so directly calling the API cannot bypass the team's region policy. The selected default region must be one of the project's enabled regions.",
+        "requestBody": { "$ref": "#/components/requestBodies/CreateProject" },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/RegionNotEnabled" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}": {
+      "parameters": [{ "$ref": "#/components/parameters/ProjectId" }],
+      "get": {
+        "operationId": "getProject",
+        "summary": "Get a project and its enabled regions",
+        "responses": {
+          "200": { "description": "Project", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectDetailResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateProject",
+        "summary": "Update project status",
+        "requestBody": { "$ref": "#/components/requestBodies/ProjectPatch" },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProject",
+        "summary": "Soft-delete a project",
+        "responses": {
+          "204": { "description": "Deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/settings": {
+      "parameters": [{ "$ref": "#/components/parameters/ProjectId" }],
+      "get": {
+        "operationId": "getProjectSettings",
+        "summary": "Get project settings and enabled regions",
+        "responses": {
+          "200": { "description": "Project settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectSettingsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateProjectSettings",
+        "summary": "Update project default and enabled regions",
+        "description": "Project regions must be a subset of the active team's enabled regions. Removing a team-enabled region from a team does not automatically change existing project rows; project changes are validated whenever they are written.",
+        "requestBody": { "$ref": "#/components/requestBodies/ProjectSettingsPatch" },
+        "responses": {
+          "200": { "description": "Updated project settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectSettingsPatchResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/RegionNotEnabled" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/builds": {
+      "get": {
+        "operationId": "listBuilds",
+        "summary": "List builds",
+        "parameters": [{ "$ref": "#/components/parameters/ProjectIdQuery" }],
+        "responses": {
+          "200": { "description": "Builds", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BuildsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "createBuild",
+        "summary": "Create a build record",
+        "description": "Creates the build record only. Queueing and build execution are intentionally not performed by this API route.",
+        "requestBody": { "$ref": "#/components/requestBodies/CreateBuild" },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BuildResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/deployments": {
+      "get": {
+        "operationId": "listDeployments",
+        "summary": "List deployments",
+        "parameters": [
+          { "$ref": "#/components/parameters/ProjectIdQuery" },
+          { "$ref": "#/components/parameters/RegionIdQuery" }
+        ],
+        "responses": {
+          "200": { "description": "Deployments", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeploymentsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "post": {
+        "operationId": "createDeployment",
+        "summary": "Create a deployment record and empty build",
+        "description": "Creates a deployment and an empty build record transactionally. No queueing or deployment execution is performed. Runtime and artifact objects are not created by this endpoint.",
+        "requestBody": { "$ref": "#/components/requestBodies/CreateDeployment" },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeploymentCreateResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/v1/deployments/{deploymentId}": {
+      "parameters": [{ "$ref": "#/components/parameters/DeploymentId" }],
+      "get": {
+        "operationId": "getDeployment",
+        "summary": "Get deployment",
+        "responses": {
+          "200": { "description": "Deployment", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeploymentDetailResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "patch": {
+        "operationId": "updateDeployment",
+        "summary": "Update deployment metadata",
+        "requestBody": { "$ref": "#/components/requestBodies/DeploymentPatch" },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DeploymentResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      },
+      "delete": {
+        "operationId": "deleteDeployment",
+        "summary": "Soft-delete deployment",
+        "responses": {
+          "204": { "description": "Deleted" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "ProjectId": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      },
+      "DeploymentId": {
+        "name": "deploymentId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      },
+      "ProjectIdQuery": {
+        "name": "projectId",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "format": "uuid" }
+      },
+      "RegionIdQuery": {
+        "name": "regionId",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "format": "uuid" }
+      }
+    },
+    "requestBodies": {
+      "CreateOrganization": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["name", "slug"],
+              "properties": {
+                "name": { "type": "string" },
+                "slug": { "type": "string" },
+                "logo": { "type": "string", "nullable": true },
+                "metadata": { "type": "string", "nullable": true }
+              }
+            }
+          }
+        }
+      },
+      "SetActiveOrganization": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["organizationId"],
+              "properties": { "organizationId": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "UserPreferencesPatch": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": { "type": "object", "additionalProperties": true }
+          }
+        }
+      },
+      "CreateProject": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["regionIds"],
+              "properties": {
+                "regionIds": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": { "type": "string", "format": "uuid" },
+                  "description": "Regions selected for this project. Every region must be enabled for the active team."
+                },
+                "defaultRegionId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Defaults to the first regionIds entry."
+                }
+              }
+            }
+          }
+        }
+      },
+      "ProjectPatch": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["status"],
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": ["PARTIAL_DEPLOYMENT", "ACTIVE", "INACTIVE"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "TeamSettingsPatch": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "defaultDeploymentRegionId": { "type": "string", "format": "uuid" },
+                "enabledRegionIds": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": { "type": "string", "format": "uuid" },
+                  "description": "Complete replacement set of regions enabled for the active team."
+                },
+                "gitProviderId": { "type": "string", "nullable": true },
+                "buildCaching": { "type": "boolean" },
+                "deploymentCaching": { "type": "boolean" },
+                "previewBuilds": { "type": "boolean" },
+                "automaticPreviewBuildAndDeployment": { "type": "boolean" }
+              }
+            }
+          }
+        }
+      },
+      "ProjectSettingsPatch": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "defaultRegionId": { "type": "string", "format": "uuid" },
+                "enabledRegionIds": {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": { "type": "string", "format": "uuid" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateBuild": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["projectId"],
+              "properties": {
+                "projectId": { "type": "string", "format": "uuid" },
+                "framework": { "type": "string", "nullable": true },
+                "rootDir": { "type": "string", "nullable": true }
+              }
+            }
+          }
+        }
+      },
+      "CreateDeployment": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["projectId", "regionId", "gitRepo", "gitUserName", "gitBranch", "gitCommitHash", "artifactId"],
+              "properties": {
+                "projectId": { "type": "string", "format": "uuid" },
+                "regionId": { "type": "string", "format": "uuid" },
+                "gitRepo": { "type": "string" },
+                "gitUserName": { "type": "string" },
+                "gitBranch": { "type": "string" },
+                "gitCommitHash": { "type": "string" },
+                "gitCommitMessage": { "type": "string", "nullable": true },
+                "artifactId": { "type": "string", "format": "uuid", "description": "Required by the current database schema; artifact creation itself is handled by another service." }
+              }
+            }
+          }
+        }
+      },
+      "DeploymentPatch": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "branch": { "type": "string" },
+                "syncMode": { "type": "string", "enum": ["synced", "independent"] },
+                "status": { "type": "string", "description": "Current implementation accepts the deployment status values defined by the API route." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Unauthorized": {
+        "description": "Authentication required",
+        "headers": {
+          "WWW-Authenticate": { "schema": { "type": "string" } }
+        },
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Forbidden": {
+        "description": "The authenticated principal is not allowed to perform this operation",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "RegionNotEnabled": {
+        "description": "One or more requested regions are not enabled for the active team",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Conflict": {
+        "description": "Resource conflict",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "RateLimited": {
+        "description": "Rate limit exceeded",
+        "headers": {
+          "Retry-After": { "schema": { "type": "integer" } },
+          "RateLimit": { "schema": { "type": "string" } },
+          "RateLimit-Policy": { "schema": { "type": "string" } }
+        },
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "session token",
+        "description": "Authenticated MeshScale session. API key authentication is intentionally not documented or enabled yet."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "requestId": { "type": "string", "nullable": true }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "$ref": "#/components/schemas/Error" }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status", "api"],
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "api": {
+            "type": "object",
+            "required": ["majorVersion", "releaseVersion"],
+            "properties": {
+              "majorVersion": { "type": "integer", "example": 1 },
+              "releaseVersion": { "type": "string", "example": "2026-10-01" }
+            }
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "required": ["userId"],
+        "properties": { "userId": { "type": "string" } }
+      },
+      "UserPreferencesResponse": {
+        "type": "object",
+        "properties": { "preferences": { "type": "object", "nullable": true, "additionalProperties": true } }
+      },
+      "Organization": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "logo": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "role": { "type": "string", "nullable": true }
+        }
+      },
+      "OrganizationResponse": {
+        "type": "object",
+        "required": ["organization"],
+        "properties": { "organization": { "$ref": "#/components/schemas/Organization" } }
+      },
+      "OrganizationListResponse": {
+        "type": "object",
+        "required": ["organizations"],
+        "properties": {
+          "organizations": { "type": "array", "items": { "$ref": "#/components/schemas/Organization" } },
+          "activeOrganizationId": { "type": "string", "nullable": true }
+        }
+      },
+      "Region": {
+        "type": "object",
+        "required": ["id", "slug", "name"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RegionsResponse": {
+        "type": "object",
+        "required": ["regions"],
+        "properties": { "regions": { "type": "array", "items": { "$ref": "#/components/schemas/Region" } } }
+      },
+      "Project": {
+        "type": "object",
+        "required": ["id", "organizationId", "status", "createdBy", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "organizationId": { "type": "string" },
+          "status": { "type": "string", "enum": ["PARTIAL_DEPLOYMENT", "ACTIVE", "INACTIVE"] },
+          "createdBy": { "type": "string" },
+          "deletedBy": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "deletedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "ProjectSettings": {
+        "type": "object",
+        "required": ["id", "projectId", "defaultRegionId", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "projectId": { "type": "string", "format": "uuid" },
+          "defaultRegionId": { "type": "string", "format": "uuid" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ProjectResponse": {
+        "type": "object",
+        "required": ["project"],
+        "properties": {
+          "project": { "$ref": "#/components/schemas/Project" }
+        }
+      },
+      "ProjectsResponse": {
+        "type": "object",
+        "required": ["projects"],
+        "properties": {
+          "projects": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } }
+        }
+      },
+      "ProjectDetailResponse": {
+        "type": "object",
+        "required": ["project", "enabledRegions"],
+        "properties": {
+          "project": { "$ref": "#/components/schemas/Project" },
+          "settings": { "$ref": "#/components/schemas/ProjectSettings", "nullable": true },
+          "enabledRegions": { "type": "array", "items": { "$ref": "#/components/schemas/Region" } }
+        }
+      },
+      "ProjectSettingsResponse": {
+        "type": "object",
+        "required": ["enabledRegions"],
+        "properties": {
+          "settings": { "$ref": "#/components/schemas/ProjectSettings", "nullable": true },
+          "enabledRegions": { "type": "array", "items": { "$ref": "#/components/schemas/Region" } }
+        }
+      },
+      "ProjectSettingsPatchResponse": {
+        "type": "object",
+        "required": ["settings", "enabledRegionIds"],
+        "properties": {
+          "settings": { "$ref": "#/components/schemas/ProjectSettings" },
+          "enabledRegionIds": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+        }
+      },
+      "TeamSettings": {
+        "type": "object",
+        "required": ["id", "organizationId", "buildCaching", "deploymentCaching", "previewBuilds", "automaticPreviewBuildAndDeployment", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "organizationId": { "type": "string" },
+          "defaultDeploymentRegionId": { "type": "string", "format": "uuid", "nullable": true },
+          "gitProviderId": { "type": "string", "nullable": true },
+          "buildCaching": { "type": "boolean" },
+          "deploymentCaching": { "type": "boolean" },
+          "previewBuilds": { "type": "boolean" },
+          "automaticPreviewBuildAndDeployment": { "type": "boolean" },
+          "notificationTeamPreferencesSetId": { "type": "string", "format": "uuid", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TeamSettingsResponse": {
+        "type": "object",
+        "properties": {
+          "settings": { "$ref": "#/components/schemas/TeamSettings", "nullable": true },
+          "enabledRegions": { "type": "array", "items": { "$ref": "#/components/schemas/Region" } }
+        }
+      },
+      "TeamSettingsPatchResponse": {
+        "type": "object",
+        "required": ["settings"],
+        "properties": {
+          "settings": { "$ref": "#/components/schemas/TeamSettings" },
+          "enabledRegionIds": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+        }
+      },
+      "Build": {
+        "type": "object",
+        "required": ["id", "projectId", "status", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "projectId": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["STARTED", "BUILDING", "COMPLETED", "ERROR", "PENDING"] },
+          "logs": { "type": "string", "nullable": true },
+          "framework": { "type": "string", "nullable": true },
+          "rootDir": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "startedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "completedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "buildTimeMs": { "type": "integer", "nullable": true }
+        }
+      },
+      "BuildResponse": {
+        "type": "object",
+        "required": ["build"],
+        "properties": { "build": { "$ref": "#/components/schemas/Build" } }
+      },
+      "BuildsResponse": {
+        "type": "object",
+        "required": ["builds"],
+        "properties": { "builds": { "type": "array", "items": { "$ref": "#/components/schemas/Build" } } }
+      },
+      "Deployment": {
+        "type": "object",
+        "required": ["id", "projectId", "gitRepo", "gitUserName", "gitBranch", "gitCommitHash", "buildId", "artifactId", "regionId", "status", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "projectId": { "type": "string", "format": "uuid" },
+          "gitRepo": { "type": "string" },
+          "gitUserName": { "type": "string" },
+          "gitBranch": { "type": "string" },
+          "gitCommitHash": { "type": "string" },
+          "gitCommitMessage": { "type": "string", "nullable": true },
+          "buildId": { "type": "string", "format": "uuid" },
+          "artifactId": { "type": "string", "format": "uuid" },
+          "regionId": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["QUEUED", "PROVISIONING", "ACTIVE", "INACTIVE", "PAUSED"] },
+          "deploymentTimeMs": { "type": "integer", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DeploymentResponse": {
+        "type": "object",
+        "required": ["deployment"],
+        "properties": { "deployment": { "$ref": "#/components/schemas/Deployment" } }
+      },
+      "DeploymentCreateResponse": {
+        "type": "object",
+        "required": ["deployment", "buildId"],
+        "properties": {
+          "deployment": { "$ref": "#/components/schemas/Deployment" },
+          "buildId": { "type": "string", "format": "uuid" }
+        }
+      },
+      "DeploymentDetailResponse": {
+        "type": "object",
+        "properties": {
+          "deployment": { "$ref": "#/components/schemas/Deployment" }
+        }
+      },
+      "DeploymentsResponse": {
+        "type": "object",
+        "required": ["deployments"],
+        "properties": {
+          "deployments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "deployment": { "$ref": "#/components/schemas/Deployment" },
+                "project": { "$ref": "#/components/schemas/Project" },
+                "region": { "$ref": "#/components/schemas/Region" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
