@@ -23,13 +23,15 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
-        run: npm i
+        run: npm i -g pnpm
+      - name: Install project dependencies
+        run: pnpm install
 
       - name: Test
-        run: npm test --if-present
+        run: pnpm test --if-present
 
       - name: Build
-        run: npm run build
+        run: pnpm generate-and-build
 
       - name: Publish
         run: npm publish --access public
